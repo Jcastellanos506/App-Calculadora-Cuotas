@@ -1,0 +1,10 @@
+{
+  "name": "cuota-vercel",
+  "version": "1.0.0",
+  "description": "Funcion serverless en Vercel que calcula la cuota mensual de un prestamo",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "dev": "node test/servidor-local.js"
+  }
+}
