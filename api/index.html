@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Cuotas</title>
+<style>
+  :root { --azul:#0B3C5D; --gris:#F2F4F7; --borde:#C9D1DA; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, Arial, sans-serif; background: var(--gris); margin:0; padding:24px; color:#1F2933; }
+  main { max-width: 480px; margin: 0 auto; background:#fff; border:1px solid var(--borde); border-radius:12px; padding:24px; }
+  h1 { color: var(--azul); font-size: 1.4rem; margin-top:0; }
+  label { display:block; margin-top:14px; font-weight:600; font-size:.9rem; }
+  input { width:100%; padding:10px; border:1px solid var(--borde); border-radius:8px; font-size:1rem; margin-top:4px; }
+  button { margin-top:18px; width:100%; padding:12px; background:var(--azul); color:#fff; border:0; border-radius:8px; font-size:1rem; cursor:pointer; }
+  #resultado { margin-top:20px; padding:14px; border-radius:8px; background:var(--gris); display:none; }
+  #resultado.error { background:#FDECEA; color:#8A1C1C; }
+  .fila { display:flex; justify-content:space-between; padding:4px 0; }
+  small { color:#666; display:block; margin-top:16px; }
+  code { background:var(--gris); padding:2px 5px; border-radius:4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Calculadora de cuota mensual</h1>
+  <form id="f">
+    <label>Monto del préstamo (COP)
+      <input id="monto" type="number" min="1" step="any" value="10000000" required></label>
+    <label>Tasa efectiva anual (%)
+      <input id="tasa" type="number" min="0" max="200" step="any" value="18" required></label>
+    <label>Plazo (meses)
+      <input id="meses" type="number" min="1" max="480" step="1" value="36" required></label>
+    <button type="submit">Calcular</button>
+  </form>
+  <div id="resultado"></div>
+  <small>Consume la función serverless <code>/api/cuota</code> desplegada en Vercel.</small>
+</main>
+<script>
+const fmt = n => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 2 }).format(n);
+const caja = document.getElementById("resultado");
+
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const q = new URLSearchParams({
+    monto: document.getElementById("monto").value,
+    tasa: document.getElementById("tasa").value,
+    meses: document.getElementById("meses").value,
+  });
+  caja.style.display = "block";
+  caja.className = "";
+  caja.textContent = "Calculando...";
+  try {
+    const r = await fetch("/api/cuota?" + q);
+    const d = await r.json();
+    if (!r.ok) {
+      caja.className = "error";
+      caja.textContent = (d.detalles || [d.error]).join(" | ");
+      return;
+    }
+    const x = d.resultado;
+    caja.innerHTML =
+      `<div class="fila"><span>Cuota mensual</span><b>${fmt(x.cuotaMensual)}</b></div>` +
+      `<div class="fila"><span>Total pagado</span><b>${fmt(x.totalPagado)}</b></div>` +
+      `<div class="fila"><span>Total intereses</span><b>${fmt(x.totalIntereses)}</b></div>` +
+      `<div class="fila"><span>Tasa mensual</span><b>${x.tasaMensualPct}%</b></div>`;
+  } catch (err) {
+    caja.className = "error";
+    caja.textContent = "No se pudo conectar con la función.";
+  }
+});
+</script>
+</body>
+</html>
